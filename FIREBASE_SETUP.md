@@ -94,13 +94,19 @@ service cloud.firestore {
 
     // Regras para produtos
     match /products/{productId} {
-      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
+      // Leitura pública apenas para produtos ativos
+      allow read: if resource.data.status == "active";
+      // Escrita apenas para o proprietário
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
     }
 
     // Regras para configurações da loja
     match /storeSettings/{settingsId} {
-      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
+      // Leitura pública das configurações
+      allow read: if true;
+      // Escrita apenas para o proprietário
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
     }
 

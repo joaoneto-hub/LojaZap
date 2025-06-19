@@ -10,6 +10,7 @@ import { Package, BarChart3, MessageCircle, Users, Plus } from "lucide-react";
 import { DashboardLayout } from "../components/layout";
 import { TokenInfo } from "../components/TokenInfo";
 import { ProductStats } from "../components/ProductStats";
+import { StoreLink } from "../components/StoreLink";
 import { useProducts } from "../hooks/useProducts";
 import { useNavigate } from "react-router-dom";
 
@@ -60,6 +61,11 @@ export const Dashboard: React.FC = () => {
           Estatísticas dos Produtos
         </h2>
         <ProductStats />
+      </div>
+
+      {/* Store Link */}
+      <div className="mb-6">
+        <StoreLink />
       </div>
 
       {/* Stats Cards */}

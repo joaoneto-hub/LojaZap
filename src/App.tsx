@@ -16,6 +16,7 @@ import { Products } from "./pages/Products";
 import { WhatsAppSettings } from "./pages/WhatsAppSettings";
 import { Orders } from "./pages/Orders";
 import { Customers } from "./pages/Customers";
+import { PublicStore } from "./pages/PublicStore";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/store/:userId" element={<PublicStore />} />
 
           {/* Rotas Privadas */}
           <Route
