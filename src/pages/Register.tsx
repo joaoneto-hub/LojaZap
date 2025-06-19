@@ -1,8 +1,8 @@
 import React from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "../contexts/AuthContext";
+import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
 import {
   Card,
   CardContent,
@@ -13,43 +13,42 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { loginSchema, type LoginFormData } from "../lib/validations";
+import { registerSchema, type RegisterFormData } from "../lib/validations";
 
 import Logo from "../assets/images/LojaZap.png";
 
-export const Login: React.FC = () => {
-  const [error, setError] = React.useState("");
-  const { login, loading } = useAuth();
+export const Register: React.FC = () => {
+  const {
+    register: registerUser,
+    loading,
+    error,
+    clearError,
+  } = useFirebaseAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from?.pathname || "/dashboard";
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setError("");
+  const onSubmit = async (data: RegisterFormData) => {
+    clearError();
 
     try {
-      await login(data.email, data.password);
-      navigate(from, { replace: true });
+      await registerUser(data.email, data.password, data.name);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      console.error("Erro no login:", err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erro inesperado ao fazer login");
-      }
+      console.error("Erro no registro:", err);
+      // O erro já é tratado no hook useFirebaseAuth
     }
   };
 
@@ -67,14 +66,31 @@ export const Login: React.FC = () => {
             </div>
           </div>
           <CardTitle className="text-2xl text-center">
-            Entrar na sua conta
+            Criar nova conta
           </CardTitle>
           <CardDescription className="text-center">
-            Digite suas credenciais para acessar o sistema
+            Preencha os dados para criar sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome completo</Label>
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                {...register("name")}
+                placeholder="Seu nome completo"
+                className={errors.name ? "border-destructive" : ""}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -91,12 +107,13 @@ export const Login: React.FC = () => {
                 </p>
               )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 {...register("password")}
                 placeholder="Sua senha"
                 className={errors.password ? "border-destructive" : ""}
@@ -108,21 +125,37 @@ export const Login: React.FC = () => {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                {...register("confirmPassword")}
+                placeholder="Confirme sua senha"
+                className={errors.confirmPassword ? "border-destructive" : ""}
+              />
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
             {error && (
               <div className="text-destructive text-sm text-center bg-destructive/10 p-3 rounded-md">
-                Não foi possível fazer login. Verifique suas credenciais e tente
-                novamente.
+                {error}
               </div>
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? "Criando conta..." : "Criar conta"}
             </Button>
 
             <div className="text-center text-sm">
-              Não tem uma conta?{" "}
-              <Link to="/register" className="text-primary hover:underline">
-                Registre-se
+              Já tem uma conta?{" "}
+              <Link to="/login" className="text-primary hover:underline">
+                Faça login
               </Link>
             </div>
           </form>

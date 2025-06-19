@@ -8,8 +8,14 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
 import { Dashboard } from "./pages/Dashboard";
 import { NotFound } from "./pages/NotFound";
+import { StoreSettings } from "./pages/StoreSettings";
+import { Products } from "./pages/Products";
+import { WhatsAppSettings } from "./pages/WhatsAppSettings";
+import { Orders } from "./pages/Orders";
+import { Customers } from "./pages/Customers";
 
 function App() {
   return (
@@ -19,6 +25,7 @@ function App() {
           {/* Rotas Públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Rotas Privadas */}
           <Route
@@ -26,6 +33,46 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/store-settings"
+            element={
+              <PrivateRoute>
+                <StoreSettings />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <PrivateRoute>
+                <Products />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/whatsapp"
+            element={
+              <PrivateRoute>
+                <WhatsAppSettings />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <PrivateRoute>
+                <Orders />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <PrivateRoute>
+                <Customers />
               </PrivateRoute>
             }
           />

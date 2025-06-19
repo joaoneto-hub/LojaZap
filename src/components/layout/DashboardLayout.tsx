@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import Logo from "../../assets/images/LojaZap.png";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -40,7 +43,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       icon: Home,
       label: "Dashboard",
       href: "/dashboard",
-      active: true,
     },
     {
       icon: Store,
@@ -99,8 +101,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {navigationItems.map((item) => (
               <Button
                 key={item.label}
-                variant={item.active ? "secondary" : "ghost"}
+                variant={
+                  location.pathname === item.href ? "secondary" : "ghost"
+                }
                 className="w-full justify-start h-11 text-sm"
+                onClick={() => navigate(item.href)}
               >
                 <item.icon className="mr-3 h-4 w-4" />
                 {item.label}
@@ -174,9 +179,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {navigationItems.map((item) => (
                   <Button
                     key={item.label}
-                    variant={item.active ? "secondary" : "ghost"}
+                    variant={
+                      location.pathname === item.href ? "secondary" : "ghost"
+                    }
                     className="w-full justify-start h-11 text-sm"
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      navigate(item.href);
+                    }}
                   >
                     <item.icon className="mr-3 h-4 w-4" />
                     {item.label}
