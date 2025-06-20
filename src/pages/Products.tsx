@@ -115,18 +115,30 @@ export const Products: React.FC = () => {
 
   const handleSubmitProduct = async (data: ProductFormData) => {
     try {
+      console.log("🚀 Products: handleSubmitProduct iniciado");
+      console.log("📦 Dados recebidos:", data);
+      console.log("✏️ Editando produto:", editingProduct);
+
       if (editingProduct) {
+        console.log("🔄 Atualizando produto existente...");
         await updateProduct({
           id: editingProduct.id,
           ...data,
         });
+        console.log("✅ Produto atualizado com sucesso");
       } else {
+        console.log("🆕 Criando novo produto...");
         await createProduct(data);
+        console.log("✅ Produto criado com sucesso");
       }
+
+      console.log("🔒 Fechando modal...");
       setIsModalOpen(false);
       setEditingProduct(null);
+      console.log("✅ Modal fechado");
     } catch (error) {
-      console.error("Erro ao salvar produto:", error);
+      console.error("❌ Erro ao salvar produto:", error);
+      console.error("📋 Detalhes do erro:", error);
     }
   };
 

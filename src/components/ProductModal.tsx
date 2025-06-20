@@ -350,11 +350,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const {
     register,
-    handleSubmit,
     setValue,
     watch,
     reset,
     formState: { errors },
+    handleSubmit,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -506,6 +506,39 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleFormSubmit = async (data: ProductFormData) => {
     try {
+      console.log("🚀 ProductModal: handleFormSubmit iniciado");
+      console.log("📦 Dados do formulário:", data);
+      console.log("🔍 Erros do formulário:", errors);
+      console.log("📋 Categorias selecionadas:", selectedCategories);
+      console.log("🖼️ Imagens:", productImages);
+      console.log("🖼️ Imagem principal:", mainImage);
+
+      // Validação manual antes do submit
+      if (!data.name || data.name.trim().length < 2) {
+        toast.error("Nome do produto deve ter pelo menos 2 caracteres");
+        return;
+      }
+
+      if (!data.description || data.description.trim().length < 10) {
+        toast.error("Descrição deve ter pelo menos 10 caracteres");
+        return;
+      }
+
+      if (selectedCategories.length === 0) {
+        toast.error("Selecione pelo menos uma categoria");
+        return;
+      }
+
+      if (!data.price || data.price <= 0) {
+        toast.error("Preço deve ser maior que zero");
+        return;
+      }
+
+      if (data.stock < 0) {
+        toast.error("Estoque não pode ser negativo");
+        return;
+      }
+
       setIsSubmitting(true);
 
       // Preparar dados do formulário
@@ -516,7 +549,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         mainImage: mainImage || undefined,
       };
 
+      console.log("📤 Dados finais para enviar:", formData);
+      console.log("📞 Chamando onSubmit...");
+
       await onSubmit(formData);
+
+      console.log("✅ onSubmit concluído com sucesso");
 
       toast.success(
         product
@@ -526,7 +564,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
       handleClose();
     } catch (error) {
-      console.error("Erro ao salvar produto:", error);
+      console.error("❌ Erro ao salvar produto:", error);
+      console.error("📋 Detalhes completos do erro:", error);
       toast.error("Erro ao salvar produto. Tente novamente.");
       // Não fechar o modal em caso de erro
     } finally {
@@ -537,6 +576,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const handleClose = () => {
     if (!isSubmitting) {
       console.log("ProductModal: closing modal");
+
+      // Verificar se há dados não salvos
+      const formData = watch();
+      const hasUnsavedData =
+        formData.name ||
+        formData.description ||
+        selectedCategories.length > 0 ||
+        productImages.length > 0 ||
+        mainImage;
+
+      if (hasUnsavedData) {
+        const confirmed = window.confirm(
+          "Você tem dados não salvos. Tem certeza que deseja sair?"
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+
       reset();
       setSelectedCategories([]);
       setProductImages([]);
@@ -881,6 +939,31 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
+  const canSubmitForm = () => {
+    // Verificar se todas as etapas obrigatórias estão completas
+    const step1Complete =
+      watch("name") &&
+      watch("description") &&
+      watch("description").length >= 10;
+    const step2Complete =
+      selectedCategories.length > 0 &&
+      watch("price") > 0 &&
+      watch("stock") >= 0;
+
+    console.log("🔍 Validação de submissão:", {
+      step1Complete,
+      step2Complete,
+      name: watch("name"),
+      description: watch("description"),
+      descriptionLength: watch("description")?.length,
+      categories: selectedCategories.length,
+      price: watch("price"),
+      stock: watch("stock"),
+    });
+
+    return step1Complete && step2Complete;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
@@ -932,7 +1015,21 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit((data) => {
+            console.log("✅ handleSubmit callback executado");
+            console.log("📦 Dados validados:", data);
+
+            // Verificar se está na última etapa
+            if (currentStep < STEPS.length) {
+              console.log("⚠️ Tentativa de submit antes da última etapa");
+              return;
+            }
+
+            return handleFormSubmit(data);
+          })}
+          className="space-y-4"
+        >
           {renderStepContent()}
 
           {/* Botões de Navegação */}
@@ -960,17 +1057,36 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || loading}
-                  className="flex items-center gap-2"
-                >
-                  {isSubmitting
-                    ? "Salvando..."
-                    : product
-                    ? "Atualizar"
-                    : "Criar"}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || loading || !canSubmitForm()}
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      console.log("🔘 Botão Criar/Atualizar clicado");
+                      console.log("📋 Estado atual:", {
+                        currentStep,
+                        isSubmitting,
+                        loading,
+                        errors,
+                        formData: watch(),
+                        canSubmit: canSubmitForm(),
+                      });
+                    }}
+                  >
+                    {isSubmitting
+                      ? "Salvando..."
+                      : product
+                      ? "Atualizar"
+                      : "Criar"}
+                  </Button>
+
+                  {!canSubmitForm() && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Complete todas as etapas obrigatórias para salvar
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

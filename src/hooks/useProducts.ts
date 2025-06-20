@@ -120,8 +120,16 @@ export const useProducts = () => {
       setError(null);
       const productsRef = collection(db, "products");
 
+      // Converter undefined para null para compatibilidade com Firestore
+      const cleanData = Object.fromEntries(
+        Object.entries(productData).map(([key, value]) => [
+          key,
+          value === undefined ? null : value,
+        ])
+      );
+
       const productToCreate = {
-        ...productData,
+        ...cleanData,
         userId: user.id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -171,7 +179,7 @@ export const useProducts = () => {
         updatedAt: serverTimestamp(),
       };
 
-      // Adicionar apenas os campos que foram fornecidos
+      // Adicionar apenas os campos que foram fornecidos e converter undefined para null
       if (productData.name !== undefined) updateData.name = productData.name;
       if (productData.description !== undefined)
         updateData.description = productData.description;
@@ -187,7 +195,8 @@ export const useProducts = () => {
       if (productData.images !== undefined)
         updateData.images = productData.images;
       if (productData.mainImage !== undefined)
-        updateData.mainImage = productData.mainImage;
+        updateData.mainImage =
+          productData.mainImage === undefined ? null : productData.mainImage;
 
       console.log("Dados para atualização:", updateData);
       await updateDoc(productRef, updateData);
