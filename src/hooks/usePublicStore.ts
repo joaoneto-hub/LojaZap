@@ -14,7 +14,11 @@ export const usePublicStore = (userId: string) => {
 
   // Listener para produtos públicos (apenas ativos)
   useEffect(() => {
+    console.log("🔍 usePublicStore: Iniciando com userId:", userId);
+    console.log("🔍 usePublicStore: Environment:", import.meta.env.MODE);
+
     if (!userId) {
+      console.log("❌ usePublicStore: userId vazio, parando");
       setProducts([]);
       setLoading(false);
       return;
@@ -94,6 +98,8 @@ export const usePublicStore = (userId: string) => {
               openingTime: data.openingTime,
               closingTime: data.closingTime,
               workingDays: data.workingDays,
+              logo: data.logo || null,
+              bannerImage: data.bannerImage || null,
               createdAt: data.createdAt?.toDate() || new Date(),
               updatedAt: data.updatedAt?.toDate() || new Date(),
             };
