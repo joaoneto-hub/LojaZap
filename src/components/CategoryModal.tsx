@@ -61,6 +61,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       name: "",
       description: "",
       color: "#6B7280",
+      isDefault: false,
     },
   });
 
@@ -75,6 +76,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         name: "",
         description: "",
         color: "#6B7280",
+        isDefault: false,
       });
     }
   }, [category, setValue, reset]);

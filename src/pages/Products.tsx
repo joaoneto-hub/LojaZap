@@ -30,7 +30,7 @@ import { DashboardLayout } from "../components/layout";
 import { ProductModal } from "../components/ProductModal";
 import { BusinessTypeModal } from "../components/BusinessTypeModal";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
-import { FirebaseStorageWarning } from "../components/FirebaseStorageWarning";
+
 import { useProducts } from "../hooks/useProducts";
 import { useCategories } from "../hooks/useCategories";
 import type { Product } from "../types/product";
