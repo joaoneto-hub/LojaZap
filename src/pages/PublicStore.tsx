@@ -128,11 +128,24 @@ export const PublicStore: React.FC = () => {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {storeSettings.name}
-              </h1>
-              <p className="text-gray-600">{storeSettings.description}</p>
+            <div className="flex items-center gap-4">
+              {/* Logo da loja */}
+              {storeSettings.logo && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <img
+                    src={storeSettings.logo.url}
+                    alt={storeSettings.logo.alt || `Logo ${storeSettings.name}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {storeSettings.name}
+                </h1>
+                <p className="text-gray-600">{storeSettings.description}</p>
+              </div>
             </div>
 
             {/* Carrinho */}
@@ -241,6 +254,24 @@ export const PublicStore: React.FC = () => {
         </div>
       </header>
 
+      {/* Banner da loja */}
+      {storeSettings.bannerImage && (
+        <div className="w-full bg-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full h-48 md:h-64 rounded-lg overflow-hidden">
+              <img
+                src={storeSettings.bannerImage.url}
+                alt={
+                  storeSettings.bannerImage.alt ||
+                  `Banner ${storeSettings.name}`
+                }
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Informações da loja */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -297,10 +328,25 @@ export const PublicStore: React.FC = () => {
                   key={product.id}
                   className="hover:shadow-lg transition-shadow"
                 >
+                  {/* Imagem do produto */}
+                  {product.mainImage && (
+                    <div className="aspect-square overflow-hidden rounded-t-lg">
+                      <img
+                        src={product.mainImage.url}
+                        alt={product.mainImage.alt || product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
                   <CardHeader>
                     <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{product.category}</Badge>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {product.categories.map((category, index) => (
+                        <Badge key={index} variant="secondary">
+                          {category}
+                        </Badge>
+                      ))}
                       {product.color && (
                         <Badge variant="outline">{product.color}</Badge>
                       )}

@@ -1,3 +1,9 @@
+export interface StoreImage {
+  url: string;
+  path: string;
+  alt?: string;
+}
+
 export interface StoreSettings {
   id: string;
   userId: string;
@@ -9,6 +15,8 @@ export interface StoreSettings {
   openingTime: string;
   closingTime: string;
   workingDays: string[];
+  logo?: StoreImage;
+  bannerImage?: StoreImage;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +30,8 @@ export interface CreateStoreSettingsData {
   openingTime: string;
   closingTime: string;
   workingDays: string[];
+  logo?: StoreImage;
+  bannerImage?: StoreImage;
 }
 
 export interface UpdateStoreSettingsData {
@@ -34,4 +44,6 @@ export interface UpdateStoreSettingsData {
   openingTime?: string;
   closingTime?: string;
   workingDays?: string[];
+  logo?: StoreImage;
+  bannerImage?: StoreImage;
 }

@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Configuração do Firebase
 // Substitua essas configurações pelas suas próprias do console do Firebase
@@ -12,6 +13,22 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+// Log da configuração para debug
+console.log("🔥 Firebase Config:", {
+  apiKey: firebaseConfig.apiKey ? "✅ Configurado" : "❌ Não configurado",
+  authDomain: firebaseConfig.authDomain
+    ? "✅ Configurado"
+    : "❌ Não configurado",
+  projectId: firebaseConfig.projectId ? "✅ Configurado" : "❌ Não configurado",
+  storageBucket: firebaseConfig.storageBucket
+    ? "✅ Configurado"
+    : "❌ Não configurado",
+  messagingSenderId: firebaseConfig.messagingSenderId
+    ? "✅ Configurado"
+    : "❌ Não configurado",
+  appId: firebaseConfig.appId ? "✅ Configurado" : "❌ Não configurado",
+});
 
 // Validar se todas as variáveis de ambiente estão configuradas
 const requiredEnvVars = [
@@ -46,5 +63,14 @@ const app = initializeApp(firebaseConfig);
 // Inicializar serviços
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+// Log da inicialização
+console.log("🔥 Firebase inicializado:", {
+  auth: auth ? "✅ OK" : "❌ Erro",
+  db: db ? "✅ OK" : "❌ Erro",
+  storage: storage ? "✅ OK" : "❌ Erro",
+  storageBucket: storage.app.options.storageBucket,
+});
 
 export default app;

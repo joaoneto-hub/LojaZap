@@ -10,6 +10,7 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { ImageUpload } from "../components/ui/image-upload";
 import { Store, Save, CheckCircle } from "lucide-react";
 import { DashboardLayout } from "../components/layout";
 import { useStoreSettings } from "../hooks/useStoreSettings";
@@ -17,7 +18,8 @@ import {
   storeSettingsSchema,
   type StoreSettingsFormData,
 } from "../lib/validations";
-import { ProductDebug } from "../components/ProductDebug";
+import type { StoreImage } from "../types/store";
+import toast from "react-hot-toast";
 
 const workingDaysOptions = [
   "Segunda",
@@ -35,6 +37,8 @@ export const StoreSettings: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [logo, setLogo] = useState<StoreImage | null>(null);
+  const [bannerImage, setBannerImage] = useState<StoreImage | null>(null);
 
   const {
     register,
@@ -70,6 +74,8 @@ export const StoreSettings: React.FC = () => {
       setValue("openingTime", storeSettings.openingTime);
       setValue("closingTime", storeSettings.closingTime);
       setValue("workingDays", storeSettings.workingDays);
+      setLogo(storeSettings.logo || null);
+      setBannerImage(storeSettings.bannerImage || null);
     }
   }, [storeSettings, setValue]);
 
@@ -85,24 +91,84 @@ export const StoreSettings: React.FC = () => {
     }
   };
 
+  // Handle image uploads
+  const handleLogoUpload = (result: { url: string; path: string }) => {
+    console.log("✅ Logo enviada:", result);
+    const newLogo: StoreImage = {
+      url: result.url,
+      path: result.path,
+      alt: "Logo da loja",
+    };
+    setLogo(newLogo);
+  };
+
+  const handleBannerUpload = (result: { url: string; path: string }) => {
+    console.log("✅ Banner enviado:", result);
+    const newBanner: StoreImage = {
+      url: result.url,
+      path: result.path,
+      alt: "Banner da loja",
+    };
+    setBannerImage(newBanner);
+  };
+
+  const handleLogoRemove = () => {
+    console.log("🗑️ Removendo logo");
+    setLogo(null);
+  };
+
+  const handleBannerRemove = () => {
+    console.log("🗑️ Removendo banner");
+    setBannerImage(null);
+  };
+
   const handleFormSubmit = async (data: StoreSettingsFormData) => {
     try {
       console.log("=== SUBMIT DO FORMULÁRIO ===");
       console.log("Dados do formulário:", data);
+      console.log("Logo:", logo);
+      console.log("Banner:", bannerImage);
       console.log("Erros do formulário:", errors);
 
       setIsSubmitting(true);
       setShowSuccess(false);
 
+      // Adicionar imagens aos dados
+      const formDataWithImages = {
+        ...data,
+        logo: logo || undefined,
+        bannerImage: bannerImage || undefined,
+      };
+
+      console.log("Dados completos para salvar:", formDataWithImages);
       console.log("Chamando saveStoreSettings...");
-      await saveStoreSettings(data);
+      await saveStoreSettings(formDataWithImages);
       console.log("saveStoreSettings concluído com sucesso");
 
       setShowSuccess(true);
+      toast.success("Configurações salvas com sucesso!", {
+        duration: 3000,
+        position: "top-right",
+        style: {
+          background: "#f0fdf4",
+          color: "#166534",
+          border: "1px solid #bbf7d0",
+        },
+      });
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
       console.error("Detalhes do erro:", error);
+      toast.error("Erro ao salvar configurações. Por favor, tente novamente.", {
+        duration: 4000,
+        position: "top-right",
+        style: {
+          background: "#fef2f2",
+          color: "#dc2626",
+          border: "1px solid #fecaca",
+        },
+      });
+      // Não fechar o formulário em caso de erro
     } finally {
       setIsSubmitting(false);
     }
@@ -313,6 +379,34 @@ export const StoreSettings: React.FC = () => {
           </Card>
         </div>
 
+        {/* Upload de Imagens */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Imagens da Loja</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Logo */}
+              <ImageUpload
+                onImageUpload={handleLogoUpload}
+                onImageRemove={handleLogoRemove}
+                currentImageUrl={logo?.url}
+                folder="store"
+                label="Logo da Loja"
+              />
+
+              {/* Banner */}
+              <ImageUpload
+                onImageUpload={handleBannerUpload}
+                onImageRemove={handleBannerRemove}
+                currentImageUrl={bannerImage?.url}
+                folder="store"
+                label="Banner da Loja"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Botão Salvar */}
         <div className="flex justify-end mt-6">
           <Button
@@ -334,11 +428,6 @@ export const StoreSettings: React.FC = () => {
           </Button>
         </div>
       </form>
-
-      {/* Debug Component */}
-      <div className="mt-8">
-        <ProductDebug />
-      </div>
     </DashboardLayout>
   );
 };

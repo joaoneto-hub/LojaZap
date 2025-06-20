@@ -1,0 +1,44 @@
+# Regras do Firebase Storage para LojaZap - VERSÃO DE TESTE
+
+# Regras simples para permitir upload (APENAS PARA TESTE)
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir acesso para todos os usuários autenticados (TESTE)
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+# ⚠️ ATENÇÃO: Estas são regras de teste que permitem acesso amplo
+# Para produção, use as regras mais restritivas abaixo:
+
+# Regras de produção (mais seguras):
+# rules_version = '2';
+# service firebase.storage {
+#   match /b/{bucket}/o {
+#     // Regras mais específicas para produtos
+#     match /products/{userId}/{fileName} {
+#       allow read, write: if request.auth != null && request.auth.uid == userId;
+#     }
+#     
+#     // Regras para imagens da loja
+#     match /store/{userId}/{fileName} {
+#       allow read, write: if request.auth != null && request.auth.uid == userId;
+#     }
+#     
+#     // Regras para outros tipos de arquivos
+#     match /{folder}/{userId}/{fileName} {
+#       allow read, write: if request.auth != null && request.auth.uid == userId;
+#     }
+#   }
+# }
+
+# Instruções de configuração:
+# 1. Acesse o Firebase Console
+# 2. Vá para Storage > Rules
+# 3. Substitua as regras existentes pelas regras de teste acima
+# 4. Clique em "Publish"
+# 5. Teste o upload
+# 6. Se funcionar, volte para as regras de produção 

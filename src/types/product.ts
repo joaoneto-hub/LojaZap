@@ -1,14 +1,21 @@
+export interface ProductImage {
+  url: string;
+  path: string;
+  alt?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   stock: number;
-  category: string;
+  categories: string[];
   color?: string;
   size?: string;
   brand?: string;
-  images?: string[];
+  images?: ProductImage[];
+  mainImage?: ProductImage;
   status: "active" | "inactive" | "out_of_stock";
   createdAt: Date;
   updatedAt: Date;
@@ -20,11 +27,12 @@ export interface CreateProductData {
   description: string;
   price: number;
   stock: number;
-  category: string;
+  categories: string[];
   color?: string;
   size?: string;
   brand?: string;
-  images?: string[];
+  images?: ProductImage[];
+  mainImage?: ProductImage;
   status: "active" | "inactive" | "out_of_stock";
 }
 

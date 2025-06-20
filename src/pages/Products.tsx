@@ -9,6 +9,14 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
   Plus,
   Package,
   Edit,
@@ -20,25 +28,22 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "../components/layout";
 import { ProductModal } from "../components/ProductModal";
+import { BusinessTypeModal } from "../components/BusinessTypeModal";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
-import { ProductDebug } from "../components/ProductDebug";
+import { FirebaseStorageWarning } from "../components/FirebaseStorageWarning";
 import { useProducts } from "../hooks/useProducts";
+import { useCategories } from "../hooks/useCategories";
 import type { Product } from "../types/product";
 import type { ProductFormData } from "../lib/validations";
 
 export const Products: React.FC = () => {
-  const {
-    products,
-    loading,
-    error,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    clearError,
-    refreshProducts,
-  } = useProducts();
+  const { products, loading, createProduct, updateProduct, deleteProduct } =
+    useProducts();
+
+  const { categories } = useCategories();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBusinessTypeModalOpen, setIsBusinessTypeModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -47,22 +52,18 @@ export const Products: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Mostrar modal de configuração automaticamente se não há categorias
+  useEffect(() => {
+    if (categories.length === 0 && !loading) {
+      setIsBusinessTypeModalOpen(true);
+    }
+  }, [categories.length, loading]);
+
   // Debug: log produtos quando mudam
   useEffect(() => {
     console.log("Products page: produtos atualizados", products.length);
   }, [products]);
 
-  const categories = [
-    "Vestidos",
-    "Blusas",
-    "Calças",
-    "Saias",
-    "Casacos",
-    "Acessórios",
-    "Sapatos",
-    "Bolsas",
-    "Outros",
-  ];
   const statuses = ["active", "inactive", "out_of_stock"];
 
   // Filtrar produtos
@@ -71,7 +72,7 @@ export const Products: React.FC = () => {
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      !selectedCategory || product.category === selectedCategory;
+      !selectedCategory || product.categories.includes(selectedCategory);
     const matchesStatus = !selectedStatus || product.status === selectedStatus;
 
     return matchesSearch && matchesCategory && matchesStatus;
@@ -100,8 +101,6 @@ export const Products: React.FC = () => {
       await deleteProduct(productToDelete.id);
       setDeleteModalOpen(false);
       setProductToDelete(null);
-      // Forçar atualização após exclusão
-      setTimeout(() => refreshProducts(), 100);
     } catch (error) {
       console.error("Erro ao deletar produto:", error);
     } finally {
@@ -126,8 +125,6 @@ export const Products: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingProduct(null);
-      // Forçar atualização após criação/edição
-      setTimeout(() => refreshProducts(), 100);
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
     }
@@ -135,7 +132,11 @@ export const Products: React.FC = () => {
 
   const handleRefresh = () => {
     console.log("Refresh manual solicitado");
-    refreshProducts();
+    // O onSnapshot já atualiza automaticamente, não precisamos forçar
+  };
+
+  const handleBusinessTypeModalClose = () => {
+    setIsBusinessTypeModalOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -205,24 +206,6 @@ export const Products: React.FC = () => {
       title="Produtos"
       description="Gerencie seu catálogo de produtos, adicione novos itens e controle o estoque."
     >
-      {/* Debug Component */}
-      <ProductDebug />
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-          <p className="text-destructive text-sm">{error}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearError}
-            className="mt-2 text-destructive hover:text-destructive"
-          >
-            Fechar
-          </Button>
-        </div>
-      )}
-
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="flex gap-2">
@@ -262,8 +245,8 @@ export const Products: React.FC = () => {
           >
             <option value="">Todas as categorias</option>
             {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+              <option key={category.id} value={category.name}>
+                {category.name}
               </option>
             ))}
           </select>
@@ -286,101 +269,132 @@ export const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <Card key={product.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg line-clamp-2">
-                  {product.name}
-                </CardTitle>
-                <Badge
-                  className={`${getStatusColor(
-                    product.status
-                  )} flex-shrink-0 flex items-center gap-1`}
-                >
-                  {getStatusIcon(product.status)}
-                  {getStatusText(product.status)}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {product.description}
-              </p>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Preço:</span>
-                  <span className="font-semibold text-primary">
-                    {formatPrice(product.price)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Estoque:
-                  </span>
-                  <span className={product.stock === 0 ? "text-red-600" : ""}>
-                    {product.stock} unidades
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Categoria:
-                  </span>
-                  <span className="text-sm">{product.category}</span>
-                </div>
-                {product.color && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Cor:</span>
-                    <span className="text-sm">{product.color}</span>
-                  </div>
-                )}
-                {product.size && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Tamanho:
-                    </span>
-                    <span className="text-sm">{product.size}</span>
-                  </div>
-                )}
-                {product.brand && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Marca:
-                    </span>
-                    <span className="text-sm">{product.brand}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleEditProduct(product)}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Ver
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDeleteClick(product)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Products Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Produtos ({filteredProducts.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Imagem</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Estoque</TableHead>
+                  <TableHead>Categorias</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-32">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      {product.mainImage ? (
+                        <div className="w-12 h-12 rounded-md overflow-hidden bg-muted">
+                          <img
+                            src={product.mainImage.url}
+                            alt={product.mainImage.alt || product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1">
+                          {product.description}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-semibold text-primary">
+                        {formatPrice(product.price)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={
+                          product.stock === 0 ? "text-red-600 font-medium" : ""
+                        }
+                      >
+                        {product.stock} un
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {product.categories.length > 0 ? (
+                          product.categories
+                            .slice(0, 2)
+                            .map((category, index) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {category}
+                              </Badge>
+                            ))
+                        ) : (
+                          <span className="text-muted-foreground text-sm">
+                            —
+                          </span>
+                        )}
+                        {product.categories.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{product.categories.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={`${getStatusColor(
+                          product.status
+                        )} flex items-center gap-1`}
+                      >
+                        {getStatusIcon(product.status)}
+                        {getStatusText(product.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteClick(product)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Empty State */}
       {filteredProducts.length === 0 && (
@@ -419,6 +433,12 @@ export const Products: React.FC = () => {
         onSubmit={handleSubmitProduct}
         product={editingProduct}
         loading={loading}
+      />
+
+      {/* Business Type Modal */}
+      <BusinessTypeModal
+        isOpen={isBusinessTypeModalOpen}
+        onClose={handleBusinessTypeModalClose}
       />
 
       {/* Delete Confirmation Modal */}

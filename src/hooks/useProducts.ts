@@ -26,12 +26,6 @@ export const useProducts = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Função para forçar atualização da lista
-  const refreshProducts = () => {
-    console.log("Forçando atualização da lista de produtos");
-    setLoading(true);
-  };
-
   // Buscar produtos do usuário
   useEffect(() => {
     if (!user) {
@@ -71,11 +65,12 @@ export const useProducts = () => {
             description: data.description,
             price: data.price,
             stock: data.stock,
-            category: data.category,
+            categories: data.categories || [data.category || ""],
             color: data.color,
             size: data.size,
             brand: data.brand,
             images: data.images || [],
+            mainImage: data.mainImage,
             status: data.status,
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -136,13 +131,6 @@ export const useProducts = () => {
       const docRef = await addDoc(productsRef, productToCreate);
 
       console.log("Produto criado com ID:", docRef.id);
-
-      // Aguardar um pouco para o listener processar
-      setTimeout(() => {
-        console.log("Verificando se o produto foi adicionado à lista...");
-        console.log("Produtos atuais:", products.length);
-      }, 1000);
-
       return docRef.id;
     } catch (error) {
       console.error("Erro ao criar produto:", error);
@@ -189,8 +177,8 @@ export const useProducts = () => {
         updateData.description = productData.description;
       if (productData.price !== undefined) updateData.price = productData.price;
       if (productData.stock !== undefined) updateData.stock = productData.stock;
-      if (productData.category !== undefined)
-        updateData.category = productData.category;
+      if (productData.categories !== undefined)
+        updateData.categories = productData.categories;
       if (productData.color !== undefined) updateData.color = productData.color;
       if (productData.size !== undefined) updateData.size = productData.size;
       if (productData.brand !== undefined) updateData.brand = productData.brand;
@@ -198,6 +186,8 @@ export const useProducts = () => {
         updateData.status = productData.status;
       if (productData.images !== undefined)
         updateData.images = productData.images;
+      if (productData.mainImage !== undefined)
+        updateData.mainImage = productData.mainImage;
 
       console.log("Dados para atualização:", updateData);
       await updateDoc(productRef, updateData);
@@ -248,7 +238,7 @@ export const useProducts = () => {
   const filterProducts = (filters: ProductFilters): Product[] => {
     return products.filter((product) => {
       // Filtro por categoria
-      if (filters.category && product.category !== filters.category) {
+      if (filters.category && !product.categories.includes(filters.category)) {
         return false;
       }
 
@@ -311,7 +301,7 @@ export const useProducts = () => {
 
   // Buscar produtos por categoria
   const getProductsByCategory = (category: string): Product[] => {
-    return products.filter((product) => product.category === category);
+    return products.filter((product) => product.categories.includes(category));
   };
 
   // Buscar produtos com estoque baixo
@@ -358,6 +348,5 @@ export const useProducts = () => {
     getProductCountByStatus,
     getTotalStockValue,
     clearError: () => setError(null),
-    refreshProducts,
   };
 };

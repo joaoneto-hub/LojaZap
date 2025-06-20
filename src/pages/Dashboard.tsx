@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -11,13 +11,27 @@ import { DashboardLayout } from "../components/layout";
 import { TokenInfo } from "../components/TokenInfo";
 import { ProductStats } from "../components/ProductStats";
 import { StoreLink } from "../components/StoreLink";
+import { OnboardingModal } from "../components/OnboardingModal";
+import { BusinessTypeModal } from "../components/BusinessTypeModal";
 import { useProducts } from "../hooks/useProducts";
+import { useCategories } from "../hooks/useCategories";
 import { useNavigate } from "react-router-dom";
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { getProductCountByStatus, getTotalStockValue, getLowStockProducts } =
     useProducts();
+  const { categories, loading: categoriesLoading } = useCategories();
+
+  const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+  const [isBusinessTypeModalOpen, setIsBusinessTypeModalOpen] = useState(false);
+
+  // Mostrar modal de onboarding automaticamente se não há categorias
+  useEffect(() => {
+    if (!categoriesLoading && categories.length === 0) {
+      setIsOnboardingModalOpen(true);
+    }
+  }, [categories.length, categoriesLoading]);
 
   const counts = getProductCountByStatus();
   const totalValue = getTotalStockValue();
@@ -48,6 +62,19 @@ export const Dashboard: React.FC = () => {
 
   const handleWhatsAppSettings = () => {
     navigate("/whatsapp-settings");
+  };
+
+  const handleOnboardingClose = () => {
+    setIsOnboardingModalOpen(false);
+  };
+
+  const handleConfigureCategories = () => {
+    setIsOnboardingModalOpen(false);
+    setIsBusinessTypeModalOpen(true);
+  };
+
+  const handleBusinessTypeModalClose = () => {
+    setIsBusinessTypeModalOpen(false);
   };
 
   return (
@@ -221,6 +248,19 @@ export const Dashboard: React.FC = () => {
           <TokenInfo />
         </div>
       </div>
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={isOnboardingModalOpen}
+        onClose={handleOnboardingClose}
+        onConfigureCategories={handleConfigureCategories}
+      />
+
+      {/* Business Type Modal */}
+      <BusinessTypeModal
+        isOpen={isBusinessTypeModalOpen}
+        onClose={handleBusinessTypeModalClose}
+      />
     </DashboardLayout>
   );
 };

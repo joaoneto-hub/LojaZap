@@ -48,6 +48,21 @@ export const resetPasswordSchema = z.object({
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
+// Schema para validação de categorias personalizadas
+export const categorySchema = z.object({
+  id: z.string().optional(),
+  name: z
+    .string()
+    .min(1, "Nome da categoria é obrigatório")
+    .min(2, "Nome deve ter pelo menos 2 caracteres")
+    .max(50, "Nome deve ter no máximo 50 caracteres"),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  isDefault: z.boolean().default(false),
+});
+
+export type CategoryFormData = z.infer<typeof categorySchema>;
+
 // Schema para validação de produtos
 export const productSchema = z.object({
   name: z
@@ -66,7 +81,7 @@ export const productSchema = z.object({
     .number()
     .int("Estoque deve ser um número inteiro")
     .min(0, "Estoque não pode ser negativo"),
-  category: z.string().min(1, "Categoria é obrigatória"),
+  categories: z.array(z.string()).min(1, "Selecione pelo menos uma categoria"),
   status: z.enum(["active", "inactive", "out_of_stock"], {
     errorMap: () => ({
       message: "Status deve ser ativo, inativo ou sem estoque",
@@ -75,6 +90,22 @@ export const productSchema = z.object({
   color: z.string().optional(),
   size: z.string().optional(),
   brand: z.string().optional(),
+  mainImage: z
+    .object({
+      url: z.string(),
+      path: z.string(),
+      alt: z.string().optional(),
+    })
+    .optional(),
+  images: z
+    .array(
+      z.object({
+        url: z.string(),
+        path: z.string(),
+        alt: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export type ProductFormData = z.infer<typeof productSchema>;
@@ -106,6 +137,20 @@ export const storeSettingsSchema = z.object({
   workingDays: z
     .array(z.string())
     .min(1, "Selecione pelo menos um dia de funcionamento"),
+  logo: z
+    .object({
+      url: z.string(),
+      path: z.string(),
+      alt: z.string().optional(),
+    })
+    .optional(),
+  bannerImage: z
+    .object({
+      url: z.string(),
+      path: z.string(),
+      alt: z.string().optional(),
+    })
+    .optional(),
 });
 
 export type StoreSettingsFormData = z.infer<typeof storeSettingsSchema>;

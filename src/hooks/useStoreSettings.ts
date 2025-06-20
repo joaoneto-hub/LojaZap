@@ -54,6 +54,8 @@ export const useStoreSettings = () => {
               openingTime: data.openingTime,
               closingTime: data.closingTime,
               workingDays: data.workingDays,
+              logo: data.logo || null,
+              bannerImage: data.bannerImage || null,
               createdAt: data.createdAt?.toDate() || new Date(),
               updatedAt: data.updatedAt?.toDate() || new Date(),
             };
@@ -99,10 +101,27 @@ export const useStoreSettings = () => {
     }
 
     try {
+      // Converter undefined para null para compatibilidade com Firestore
+      const cleanData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === undefined ? null : value,
+        ])
+      );
+
       const settingsData: StoreSettings = {
         id: user.id,
         userId: user.id,
-        ...data,
+        name: cleanData.name,
+        description: cleanData.description,
+        phone: cleanData.phone,
+        email: cleanData.email,
+        address: cleanData.address,
+        openingTime: cleanData.openingTime,
+        closingTime: cleanData.closingTime,
+        workingDays: cleanData.workingDays,
+        logo: cleanData.logo || null,
+        bannerImage: cleanData.bannerImage || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -133,8 +152,16 @@ export const useStoreSettings = () => {
     }
 
     try {
+      // Converter undefined para null para compatibilidade com Firestore
+      const cleanData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === undefined ? null : value,
+        ])
+      );
+
       const settingsToUpdate = {
-        ...data,
+        ...cleanData,
         updatedAt: new Date(),
       };
 

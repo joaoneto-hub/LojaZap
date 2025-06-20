@@ -1,137 +1,133 @@
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-
+import { ImageUpload } from "./ui/image-upload";
+import { useImageUpload } from "../hooks/useImageUpload";
 import { useAuth } from "../contexts/AuthContext";
-import { db } from "../lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import toast from "react-hot-toast";
+
+interface UploadResult {
+  url?: string;
+  path?: string;
+  error?: string;
+}
 
 export const ProductDebug: React.FC = () => {
+  const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const { user } = useAuth();
-  const [testResult, setTestResult] = useState<string>("");
-  const [isTesting, setIsTesting] = useState(false);
+  const { uploadImage, uploading, error } = useImageUpload();
 
-  const testFirestoreConnection = async () => {
-    if (!user) {
-      setTestResult("Usuário não autenticado");
-      return;
-    }
-
-    setIsTesting(true);
-    setTestResult("Testando conexão...");
-
+  const handleTestUpload = async () => {
     try {
-      // Teste 1: Tentar criar um documento de teste
-      const testDocRef = doc(db, "test", user.id);
-      await setDoc(testDocRef, {
-        userId: user.id,
-        test: true,
-        timestamp: new Date(),
-        message: "Teste de conexão com Firestore",
-      });
-
-      // Teste 2: Tentar ler o documento
-      const docSnap = await getDoc(testDocRef);
-      if (docSnap.exists()) {
-        setTestResult(
-          "✅ Conexão com Firestore funcionando! Documento criado e lido com sucesso."
-        );
-      } else {
-        setTestResult("❌ Documento não foi criado corretamente");
+      // Criar um arquivo de teste
+      const canvas = document.createElement("canvas");
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "red";
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText("TEST", 20, 50);
       }
+
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          const file = new File([blob], "test-image.png", {
+            type: "image/png",
+          });
+          console.log("🧪 Testando upload com arquivo:", file);
+
+          const result = await uploadImage(file, "test");
+          console.log("✅ Resultado do teste:", result);
+          setUploadResults((prev) => [...prev, result]);
+
+          toast.success("Teste de upload realizado com sucesso!", {
+            duration: 3000,
+            position: "top-right",
+            style: {
+              background: "#f0fdf4",
+              color: "#166534",
+              border: "1px solid #bbf7d0",
+            },
+          });
+        }
+      }, "image/png");
     } catch (error) {
-      console.error("Erro no teste:", error);
-      setTestResult(
-        `❌ Erro: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
-    } finally {
-      setIsTesting(false);
-    }
-  };
+      console.error("❌ Erro no teste:", error);
+      setUploadResults((prev) => [
+        ...prev,
+        { error: error instanceof Error ? error.message : "Erro desconhecido" },
+      ]);
 
-  const testStoreSettings = async () => {
-    if (!user) {
-      setTestResult("Usuário não autenticado");
-      return;
-    }
-
-    setIsTesting(true);
-    setTestResult("Testando storeSettings...");
-
-    try {
-      // Teste: Tentar criar configurações de teste
-      const settingsRef = doc(db, "storeSettings", user.id);
-      await setDoc(settingsRef, {
-        userId: user.id,
-        name: "Loja Teste",
-        description: "Descrição de teste",
-        phone: "11999999999",
-        email: "teste@teste.com",
-        address: "Endereço de teste",
-        openingTime: "08:00",
-        closingTime: "18:00",
-        workingDays: ["segunda", "terça"],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      toast.error("Erro no teste de upload", {
+        duration: 4000,
+        position: "top-right",
+        style: {
+          background: "#fef2f2",
+          color: "#dc2626",
+          border: "1px solid #fecaca",
+        },
       });
-
-      setTestResult("✅ Configurações de teste criadas com sucesso!");
-    } catch (error) {
-      console.error("Erro no teste de storeSettings:", error);
-      setTestResult(
-        `❌ Erro em storeSettings: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
-    } finally {
-      setIsTesting(false);
     }
   };
 
-  if (process.env.NODE_ENV === "production") {
-    return null;
-  }
+  const handleImageUpload = (result: { url: string; path: string }) => {
+    console.log("📸 Imagem enviada via componente:", result);
+    setUploadResults((prev) => [...prev, result]);
+
+    toast.success("Upload manual realizado com sucesso!", {
+      duration: 3000,
+      position: "top-right",
+      style: {
+        background: "#f0fdf4",
+        color: "#166534",
+        border: "1px solid #bbf7d0",
+      },
+    });
+  };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Debug - Teste de Conexão</CardTitle>
+        <CardTitle>Debug - Upload de Imagens</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Button
-            onClick={testFirestoreConnection}
-            disabled={isTesting}
-            variant="outline"
-          >
-            Testar Conexão Firestore
-          </Button>
-
-          <Button
-            onClick={testStoreSettings}
-            disabled={isTesting}
-            variant="outline"
-          >
-            Testar StoreSettings
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Usuário: {user?.email} (ID: {user?.id})
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Status: {uploading ? "Fazendo upload..." : "Pronto"}
+          </p>
+          {error && <p className="text-sm text-destructive">Erro: {error}</p>}
         </div>
 
-        {testResult && (
-          <div className="p-3 bg-gray-100 rounded-md">
-            <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
+        <div className="space-y-4">
+          <Button onClick={handleTestUpload} disabled={uploading}>
+            Testar Upload Automático
+          </Button>
+
+          <ImageUpload
+            onImageUpload={handleImageUpload}
+            folder="test"
+            label="Teste Manual de Upload"
+          />
+        </div>
+
+        {uploadResults.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-medium">Resultados dos Testes:</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {uploadResults.map((result, index) => (
+                <div key={index} className="p-2 bg-muted rounded text-xs">
+                  <pre>{JSON.stringify(result, null, 2)}</pre>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-
-        <div className="text-sm text-gray-600">
-          <p>
-            <strong>Usuário:</strong> {user?.email || "Não autenticado"}
-          </p>
-          <p>
-            <strong>ID:</strong> {user?.id || "N/A"}
-          </p>
-        </div>
       </CardContent>
     </Card>
   );

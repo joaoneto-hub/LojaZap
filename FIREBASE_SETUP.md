@@ -1,6 +1,6 @@
 # Configuração do Firebase para LojaZap
 
-Este documento explica como configurar o Firebase para o projeto LojaZap, incluindo autenticação, Firestore e regras de segurança.
+Este documento contém as instruções para configurar o Firebase no projeto LojaZap.
 
 ## 🔧 Troubleshooting - Problemas Comuns
 
@@ -30,40 +30,40 @@ Substitua os valores pelas suas configurações reais do Firebase Console.
 
 ## 1. Configuração do Firebase
 
-### 1.1 Criar Projeto Firebase
+### 1.1 Criar Projeto no Firebase Console
 
-1. Acesse [Firebase Console](https://console.firebase.google.com/)
-2. Clique em "Adicionar projeto"
+1. Acesse [console.firebase.google.com](https://console.firebase.google.com)
+2. Clique em "Criar projeto"
 3. Digite o nome do projeto (ex: "lojazap-app")
 4. Siga os passos de configuração
 
-### 1.2 Configurar Autenticação
+### 1.2 Configurar Authentication
 
 1. No console do Firebase, vá para "Authentication"
 2. Clique em "Get started"
 3. Vá para a aba "Sign-in method"
 4. Habilite "Email/Password"
-5. Configure as opções conforme necessário
+5. Clique em "Save"
 
 ### 1.3 Configurar Firestore Database
 
 1. No console do Firebase, vá para "Firestore Database"
 2. Clique em "Create database"
 3. Escolha "Start in test mode" (para desenvolvimento)
-4. Selecione a localização mais próxima (ex: us-central1)
+4. Escolha a localização mais próxima (ex: us-central1)
 
-### 1.4 Obter Configuração
+### 1.4 Obter Configuração do Projeto
 
 1. No console do Firebase, clique na engrenagem (⚙️) ao lado de "Project Overview"
 2. Selecione "Project settings"
 3. Role para baixo até "Your apps"
-4. Clique no ícone da web (</>)
-5. Registre o app com um nome (ex: "lojazap-web")
-6. Copie a configuração
+4. Clique no ícone da web (</>) para adicionar um app web
+5. Digite um nome para o app (ex: "lojazap-web")
+6. Copie a configuração do Firebase
 
 ### 1.5 Configurar Variáveis de Ambiente
 
-Crie um arquivo `.env.local` na raiz do projeto:
+Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 
 ```env
 VITE_FIREBASE_API_KEY=sua_api_key_aqui
@@ -76,360 +76,372 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abcdef123456
 
 ## 2. Regras de Segurança do Firestore
 
-### 2.1 Regras para Autenticação
+### 2.1 Regras para Produtos
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Verificar se o usuário está autenticado
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Verificar se o documento pertence ao usuário
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
     // Regras para produtos
     match /products/{productId} {
-      // Leitura pública apenas para produtos ativos
-      allow read: if resource.data.status == "active";
-      // Escrita apenas para o proprietário
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
-    // Regras para configurações da loja
-    match /storeSettings/{settingsId} {
-      // Leitura pública das configurações
-      allow read: if true;
-      // Escrita apenas para o proprietário
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-    }
-
-    // Regras para usuários (se necessário)
-    match /users/{userId} {
-      allow read, write: if isAuthenticated() && isOwner(userId);
-    }
-
-    // Regras para documentos de teste
-    match /test/{testId} {
-      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+    // Regras para categorias
+    match /categories/{categoryId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
   }
 }
 ```
 
-### 2.2 Regras Simplificadas para Desenvolvimento
+### 2.2 Explicação das Regras
 
-Se estiver tendo problemas, use estas regras mais permissivas para desenvolvimento:
+- **Produtos**: Cada usuário só pode acessar, criar, editar e deletar seus próprios produtos
+- **Categorias**: Cada usuário só pode acessar, criar, editar e deletar suas próprias categorias
+- **Autenticação**: Todas as operações requerem autenticação
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Regras permissivas para desenvolvimento
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
+## 3. Gerenciamento de Token e Sessão
 
-**⚠️ IMPORTANTE:** Use as regras permissivas apenas em desenvolvimento. Para produção, sempre use as regras restritivas.
+### 3.1 Configurações de Token
 
-## 3. Sistema de Produtos
+- **Renovação automática**: 5 minutos antes da expiração
+- **Timeout de sessão**: 1 hora de inatividade
+- **Detecção de atividade**: Mouse, teclado, scroll e touch
 
-### 3.1 Estrutura dos Dados
+### 3.2 Armazenamento
 
-Cada produto no Firestore tem a seguinte estrutura:
+- Tokens são armazenados no localStorage
+- Renovação automática em background
+- Logout automático na expiração
+
+## 4. Sistema de Categorias Dinâmicas
+
+### 4.1 Configuração por Tipo de Negócio
+
+O sistema agora permite que o usuário escolha o tipo do seu negócio e receba categorias específicas automaticamente. Os tipos disponíveis são:
+
+#### **Moda e Vestuário**
+
+- Roupas, Calçados, Acessórios, Bolsas, Promoções, Novidades, Outros
+
+#### **Beleza e Cosméticos**
+
+- Maquiagem, Skincare, Perfumes, Cabelo, Corpo, Promoções, Outros
+
+#### **Eletrônicos**
+
+- Smartphones, Computadores, Acessórios, Gaming, Áudio, Promoções, Outros
+
+#### **Casa e Decoração**
+
+- Decoração, Cozinha, Jardinagem, Organização, Iluminação, Promoções, Outros
+
+#### **Alimentos e Bebidas**
+
+- Alimentos, Bebidas, Doces, Orgânicos, Promoções, Novidades, Outros
+
+#### **Esportes e Fitness**
+
+- Roupas Esportivas, Calçados Esportivos, Equipamentos, Suplementos, Fitness, Promoções, Outros
+
+#### **Livros e Educação**
+
+- Livros, Educação, Revistas, Papelaria, Promoções, Novidades, Outros
+
+#### **Negócio Genérico**
+
+- Produtos Principais, Acessórios, Promoções, Novidades, Mais Vendidos, Categoria 1-4, Outros
+
+### 4.2 Categorias Padrão (Legado)
+
+Para usuários existentes, as categorias padrão genéricas incluem:
+
+- **Produtos Principais**: Produtos principais do seu negócio
+- **Acessórios**: Acessórios e complementos
+- **Promoções**: Produtos em promoção
+- **Novidades**: Produtos novos e lançamentos
+- **Mais Vendidos**: Produtos mais populares
+- **Categoria 1**: Primeira categoria personalizada
+- **Categoria 2**: Segunda categoria personalizada
+- **Categoria 3**: Terceira categoria personalizada
+- **Categoria 4**: Quarta categoria personalizada
+- **Outros**: Outros produtos
+
+### 4.3 Funcionalidades
+
+- **Configuração por tipo de negócio**: Usuários podem escolher seu tipo de negócio e receber categorias específicas
+- **Reconfiguração**: Possibilidade de reconfigurar categorias baseado no tipo de negócio
+- **Categorias personalizadas**: Usuários podem criar suas próprias categorias
+- **Cores personalizadas**: Cada categoria pode ter uma cor única
+- **Descrições**: Categorias podem ter descrições opcionais
+- **Proteção**: Categorias padrão não podem ser editadas ou deletadas
+- **Filtros**: Categorias são usadas para filtrar produtos
+
+### 4.4 Estrutura de Dados
 
 ```typescript
-interface Product {
+interface Category {
   id: string;
   name: string;
-  description: string;
-  price: number;
-  stock: number;
-  category: string;
+  description?: string;
   color?: string;
-  size?: string;
-  brand?: string;
-  images?: string[];
-  status: "active" | "inactive" | "out_of_stock";
+  isDefault: boolean;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
-  userId: string; // ID do usuário proprietário
 }
 ```
 
-### 3.2 Operações CRUD
+## 5. Operações CRUD de Produtos
 
-#### Criar Produto
-
-```typescript
-import { useProducts } from "../hooks/useProducts";
-
-const { createProduct } = useProducts();
-
-const newProduct = await createProduct({
-  name: "Vestido Floral",
-  description: "Vestido elegante com estampa floral",
-  price: 89.9,
-  stock: 15,
-  category: "Vestidos",
-  color: "Azul",
-  size: "M",
-  brand: "Fashion Brand",
-  status: "active",
-});
-```
-
-#### Atualizar Produto
+### 5.1 Criar Produto
 
 ```typescript
-const { updateProduct } = useProducts();
-
-await updateProduct({
-  id: "product_id",
-  name: "Vestido Floral Atualizado",
-  price: 99.9,
+const newProduct = {
+  name: "Nome do Produto",
+  description: "Descrição detalhada",
+  price: 99.99,
   stock: 10,
-});
+  category: "Nome da Categoria",
+  color: "Azul", // opcional
+  size: "M", // opcional
+  brand: "Marca", // opcional
+  status: "active",
+};
+
+await addProduct(newProduct);
 ```
 
-#### Excluir Produto
+### 5.2 Atualizar Produto
 
 ```typescript
-const { deleteProduct } = useProducts();
+const updatedProduct = {
+  id: "product_id",
+  name: "Novo Nome",
+  price: 89.99,
+  stock: 5,
+};
 
+await updateProduct(updatedProduct);
+```
+
+### 5.3 Deletar Produto
+
+```typescript
 await deleteProduct("product_id");
 ```
 
-#### Buscar Produtos
+### 5.4 Listar Produtos
 
 ```typescript
-const { products, filterProducts } = useProducts();
+const { products, loading, error } = useProducts();
 
-// Filtrar produtos
-const filteredProducts = filterProducts({
-  category: "Vestidos",
-  status: "active",
-  minPrice: 50,
-  maxPrice: 100,
-  inStock: true,
-  search: "floral",
-});
+// Produtos são carregados automaticamente
+// Filtros por categoria são aplicados automaticamente
 ```
 
-### 3.3 Funcionalidades Avançadas
+## 6. Campos Dinâmicos por Tipo de Negócio
 
-#### Estatísticas de Produtos
+### 6.1 Detecção Automática
 
-```typescript
-const {
-  getProductCountByStatus,
-  getTotalStockValue,
-  getLowStockProducts,
-  getActiveProducts,
-} = useProducts();
-
-// Contar produtos por status
-const counts = getProductCountByStatus();
-console.log(counts); // { active: 10, inactive: 2, out_of_stock: 1, total: 13 }
-
-// Valor total do estoque
-const totalValue = getTotalStockValue();
-
-// Produtos com estoque baixo
-const lowStock = getLowStockProducts(5);
-```
-
-#### Atualizações Específicas
+O sistema detecta automaticamente o tipo de negócio baseado nas categorias do usuário e adapta os campos do formulário de produtos:
 
 ```typescript
-const { updateStock, updateStatus } = useProducts();
+const businessType = useMemo(() => {
+  if (categories.length === 0) return "generic";
 
-// Atualizar apenas o estoque
-await updateStock("product_id", 25);
+  const categoryNames = categories.map((c) => c.name.toLowerCase());
 
-// Atualizar apenas o status
-await updateStatus("product_id", "out_of_stock");
-```
-
-## 4. Autenticação e Sessão
-
-### 4.1 Login/Logout
-
-```typescript
-import { useAuth } from "../contexts/AuthContext";
-
-const { login, logout, user, isAuthenticated } = useAuth();
-
-// Login
-await login("usuario@email.com", "senha123");
-
-// Logout
-await logout();
-```
-
-### 4.2 Gerenciamento de Token
-
-```typescript
-const { tokenExpiryTime, refreshToken } = useAuth();
-
-// Verificar expiração do token
-if (tokenExpiryTime) {
-  const timeUntilExpiry = tokenExpiryTime - Date.now();
-  console.log(`Token expira em ${timeUntilExpiry}ms`);
-}
-
-// Renovar token manualmente
-await refreshToken();
-```
-
-### 4.3 Requisições Autenticadas
-
-```typescript
-import { useAuthenticatedRequest } from "../hooks/useAuthenticatedRequest";
-
-const { get, post, put, delete: del } = useAuthenticatedRequest();
-
-// Requisição autenticada automática
-const response = await get("/api/produtos");
-const newProduct = await post("/api/produtos", { name: "Produto", price: 100 });
-```
-
-## 5. Segurança e Boas Práticas
-
-### 5.1 Isolamento de Dados
-
-- Cada usuário só acessa seus próprios produtos
-- O campo `userId` garante isolamento
-- Regras do Firestore validam acesso
-
-### 5.2 Validação de Dados
-
-```typescript
-import { productSchema } from "../lib/validations";
-
-// Validar dados antes de salvar
-const validatedData = productSchema.parse(productData);
-```
-
-### 5.3 Tratamento de Erros
-
-```typescript
-try {
-  await createProduct(productData);
-} catch (error) {
-  if (error.message.includes("não autorizado")) {
-    // Produto não pertence ao usuário
-  } else if (error.message.includes("não encontrado")) {
-    // Produto não existe
+  if (
+    categoryNames.some((name) =>
+      ["roupas", "calçados", "acessórios"].includes(name)
+    )
+  ) {
+    return "fashion";
   }
-}
-```
-
-## 6. Deploy e Produção
-
-### 6.1 Configurar Regras de Produção
-
-```javascript
-// Regras mais restritivas para produção
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /products/{productId} {
-      allow read, write: if isAuthenticated() &&
-        request.auth.uid == resource.data.userId &&
-        request.auth.token.email_verified == true;
-    }
+  if (
+    categoryNames.some((name) =>
+      ["maquiagem", "skincare", "perfumes"].includes(name)
+    )
+  ) {
+    return "beauty";
   }
-}
+  // ... outras detecções
+}, [categories]);
 ```
 
-### 6.2 Variáveis de Ambiente de Produção
+### 6.2 Configurações de Campos por Tipo
 
-```env
-VITE_FIREBASE_API_KEY=prod_api_key
-VITE_FIREBASE_AUTH_DOMAIN=prod_project.firebaseapp.com
-# ... outras configurações de produção
-```
+#### **Moda e Vestuário (fashion)**
 
-## 7. Monitoramento e Logs
+- **Cor**: Select com cores de roupas (Preto, Branco, Azul, etc.)
+- **Tamanho**: Select com tamanhos (PP, P, M, G, GG, XG, Único)
+- **Marca**: Input para marca da roupa
 
-### 7.1 Firebase Analytics
+#### **Beleza e Cosméticos (beauty)**
 
-- Configure Firebase Analytics para monitorar uso
-- Acompanhe eventos de criação/edição de produtos
-- Monitore erros de autenticação
+- **Cor/Tom**: Select com tons de maquiagem (Transparente, Bege, Rosa, etc.)
+- **Volume/Tamanho**: Select com volumes (30ml, 50ml, 100ml, 200ml, 500ml, 1L, Outro)
+- **Marca**: Input para marca de cosméticos
 
-### 7.2 Logs de Segurança
+#### **Eletrônicos (electronics)**
 
-- Monitore tentativas de acesso não autorizado
-- Configure alertas para atividades suspeitas
-- Revise logs regularmente
+- **Cor**: Select com cores de dispositivos (Preto, Branco, Azul, etc.)
+- **Capacidade/Modelo**: Input para especificações técnicas (128GB, iPhone 14, etc.)
+- **Marca**: Input para marca de eletrônicos (Apple, Samsung, etc.)
 
-## 8. Backup e Recuperação
+#### **Casa e Decoração (home)**
 
-### 8.1 Backup Automático
+- **Cor**: Select com cores de decoração
+- **Dimensões**: Input para tamanhos de produtos (30x40cm, Grande, etc.)
+- **Marca**: Input para marca de produtos para casa
 
-- Configure backup automático do Firestore
-- Teste restauração de dados regularmente
-- Mantenha cópias de segurança
+#### **Alimentos e Bebidas (food)**
 
-### 8.2 Migração de Dados
+- **Sabor**: Input para sabores (Chocolate, Baunilha, etc.)
+- **Peso/Volume**: Input para quantidades (500g, 1L, etc.)
+- **Marca**: Input para marca de alimentos
+
+#### **Esportes e Fitness (sports)**
+
+- **Cor**: Select com cores esportivas
+- **Tamanho**: Select com tamanhos esportivos (PP, P, M, G, GG, XG, Único)
+- **Marca**: Input para marca esportiva
+
+#### **Livros e Educação (books)**
+
+- **Edição**: Input para informações de edição (1ª Edição, Capa Dura, etc.)
+- **Formato**: Select com formatos (Pocket, Brochura, Capa Dura, Digital, Outro)
+- **Editora/Autor**: Input para editora ou autor
+
+#### **Negócio Genérico (generic)**
+
+- **Característica 1**: Input genérico (Cor, Material, etc.)
+- **Característica 2**: Input genérico (Tamanho, Peso, etc.)
+- **Marca/Fabricante**: Input para marca
+
+### 6.3 Renderização Dinâmica
+
+Os campos são renderizados dinamicamente baseado na configuração:
 
 ```typescript
-// Script para migrar dados entre ambientes
-const migrateProducts = async (sourceDb, targetDb) => {
-  const products = await sourceDb.collection("products").get();
+const renderDynamicField = (fieldKey: string, fieldConfig: FieldConfig) => {
+  const value = watch(fieldKey as keyof ProductFormData);
 
-  for (const doc of products.docs) {
-    await targetDb.collection("products").add(doc.data());
+  if (fieldConfig.type === "select") {
+    return (
+      <Select
+        value={value as string}
+        onValueChange={(value: string) =>
+          setValue(fieldKey as keyof ProductFormData, value)
+        }
+      >
+        <SelectTrigger>
+          <SelectValue placeholder={fieldConfig.placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {fieldConfig.options?.map((option: string) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  } else {
+    return (
+      <Input
+        {...register(fieldKey as keyof ProductFormData)}
+        placeholder={fieldConfig.placeholder}
+      />
+    );
   }
 };
 ```
 
-## 9. Troubleshooting
+### 6.4 Benefícios
 
-### 9.1 Problemas Comuns
+- **Experiência Personalizada**: Campos relevantes para cada tipo de negócio
+- **Flexibilidade**: Suporte a diferentes tipos de produtos
+- **Usabilidade**: Interface adaptada ao contexto do usuário
+- **Escalabilidade**: Fácil adição de novos tipos de negócio
+- **Consistência**: Campos padronizados por categoria
 
-**Erro: "Produto não autorizado"**
+## 7. Onboarding e Configuração Inicial
 
-- Verifique se o usuário está logado
-- Confirme se o produto pertence ao usuário
-- Verifique as regras do Firestore
+### 7.1 Fluxo de Onboarding
 
-**Erro: "Token expirado"**
+1. **Primeiro Acesso**: Modal de onboarding com 3 etapas explicando as funcionalidades
+2. **Seleção de Tipo de Negócio**: Modal para escolher o tipo de negócio
+3. **Configuração de Categorias**: Categorias criadas automaticamente baseado no tipo
+4. **Pronto para Usar**: Sistema configurado e funcional
 
-- O sistema renova automaticamente
-- Se persistir, faça logout e login novamente
+### 7.2 Componentes de Onboarding
 
-**Erro: "Usuário não autenticado"**
+- **OnboardingModal**: Guia inicial para novos usuários
+- **BusinessTypeModal**: Seleção do tipo de negócio
+- **CategoryModal**: Gerenciamento de categorias
 
-- Verifique se o Firebase está configurado corretamente
-- Confirme se as variáveis de ambiente estão definidas
+### 7.3 Uso Automático
 
-### 9.2 Debug
+O sistema automaticamente mostra os modais necessários quando:
 
-```typescript
-// Habilitar logs detalhados
-import { connectFirestoreEmulator } from "firebase/firestore";
+- Usuário não tem categorias configuradas
+- Primeiro acesso ao dashboard
+- Tentativa de adicionar produtos sem categorias
 
-if (import.meta.env.DEV) {
-  connectFirestoreEmulator(db, "localhost", 8080);
-}
+## 8. Estrutura de Dados Completa
+
+### 8.1 Coleções do Firestore
+
+```
+/users/{userId}
+  - email: string
+  - displayName: string
+  - createdAt: timestamp
+
+/products/{productId}
+  - name: string
+  - description: string
+  - price: number
+  - stock: number
+  - category: string
+  - color: string (opcional)
+  - size: string (opcional)
+  - brand: string (opcional)
+  - status: string
+  - userId: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
+
+/categories/{categoryId}
+  - name: string
+  - color: string
+  - userId: string
+  - createdAt: timestamp
+
+/storeSettings/{settingId}
+  - businessType: string
+  - storeName: string
+  - description: string
+  - userId: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
 ```
 
-## 10. Recursos Adicionais
+## 9. Funcionalidades Implementadas
 
-- [Documentação Firebase](https://firebase.google.com/docs)
-- [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
-- [Firebase Authentication](https://firebase.google.com/docs/auth)
-- [React Firebase Hooks](https://github.com/CSFrequency/react-firebase-hooks)
+✅ **Autenticação Firebase** - Login/registro com email/senha  
+✅ **Gerenciamento de Sessão** - Token refresh e timeout automático  
+✅ **Produtos Dinâmicos** - CRUD com campos adaptáveis por tipo de negócio  
+✅ **Categorias Inteligentes** - Configuração automática por tipo de negócio  
+✅ **Onboarding Guiado** - Fluxo completo para novos usuários  
+✅ **Campos Dinâmicos** - Formulários adaptáveis automaticamente  
+✅ **Segurança** - Regras do Firestore configuradas  
+✅ **Validação** - Schemas Zod para todos os formulários  
+✅ **UI Responsiva** - Componentes shadcn/ui integrados
+
+O sistema agora está completamente funcional com campos dinâmicos que se adaptam automaticamente ao tipo de negócio do usuário!

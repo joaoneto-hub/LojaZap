@@ -14,6 +14,7 @@ import {
   Home,
   LogOut,
   X,
+  Tag,
 } from "lucide-react";
 import Logo from "../../assets/images/LojaZap.png";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -53,6 +54,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       icon: Package,
       label: "Produtos",
       href: "/products",
+    },
+    {
+      icon: Tag,
+      label: "Categorias",
+      href: "/categories",
     },
     {
       icon: MessageCircle,
